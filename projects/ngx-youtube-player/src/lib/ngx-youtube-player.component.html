@@ -10,7 +10,11 @@
           <path fill="currentColor" d="M14,19H18V5H14M6,19H10V5H6V19Z" />
         </svg>
       </button>
-      <button class="mini-player-btn">
+      <button
+        #miniPlayerBtn
+        class="mini-player-btn"
+        (click)="toggleMiniPlayer()"
+      >
         <svg viewBox="0 0 36 36">
           <path
             fill="currentColor"
@@ -18,7 +22,7 @@
           />
         </svg>
       </button>
-      <button class="theater-btn">
+      <button #theaterBtn class="theater-btn" (click)="toggleTheater()">
         <svg class="tall" viewBox="0 0 36 36">
           <path
             fill="currentColor"
@@ -32,7 +36,11 @@
           />
         </svg>
       </button>
-      <button class="fullscreen-btn">
+      <button
+        #fullscreenBtn
+        class="fullscreen-btn"
+        (click)="toggleFullScreen()"
+      >
         <svg class="open" viewBox="0 0 36 36">
           <path
             fill="currentColor"

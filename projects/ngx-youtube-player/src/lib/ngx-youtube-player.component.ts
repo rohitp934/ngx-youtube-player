@@ -23,14 +23,41 @@ export class NgxYoutubePlayerComponent implements OnInit {
         break;
     }
   }
+
+  // Handle Full Screen Events
+  @HostListener('document:fullscreenchange', ['$event'])
+  handleFullScreenChange(event: Event) {
+    this.videoContainer.nativeElement.classList.toggle(
+      'fullscreen',
+      document.fullscreenElement ? true : false
+    );
+  }
   // get child element .play-pause-btn with ViewChild
   @ViewChild('playPauseBtn') playPauseBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('video') video!: ElementRef<HTMLVideoElement>;
   @ViewChild('videoContainer') videoContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('theaterBtn') theaterBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('miniPlayerBtn') miniPlayerBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('fullScreenBtn') fullScreenBtn!: ElementRef<HTMLButtonElement>;
 
   constructor() {}
 
   ngOnInit(): void {}
+
+  // View Modes
+  toggleTheater() {
+    this.videoContainer.nativeElement.classList.toggle('theater');
+  }
+
+  toggleFullScreen() {
+    if (document.fullscreenElement === null) {
+      this.videoContainer.nativeElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  toggleMiniPlayer() {}
 
   // Play/Pause video
   togglePlay() {
