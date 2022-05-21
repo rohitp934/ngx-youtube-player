@@ -42,7 +42,7 @@ video {
   content: "";
   position: absolute;
   bottom: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.35), transparent);
   width: 100%;
   aspect-ratio: 6/1;
   z-index: -1;
@@ -102,4 +102,66 @@ video {
 
 .video-container:not(.fullscreen) .close {
   display: none;
+}
+
+.volume-high-icon,
+.volume-low-icon,
+.volume-muted-icon {
+  display: none;
+}
+
+.video-container[data-volume-level="high"] .volume-high-icon {
+  display: block;
+}
+.video-container[data-volume-level="low"] .volume-low-icon {
+  display: block;
+}
+.video-container[data-volume-level="muted"] .volume-muted-icon {
+  display: block;
+}
+
+.volume-container {
+  display: flex;
+}
+.volume-container:hover .bsp-volume-panel {
+  width: 73px;
+}
+.bsp-volume-panel {
+  bottom: 0;
+  height: 48px;
+  width: 0;
+  overflow: hidden;
+  transition: width 0.2s;
+  cursor: pointer;
+  transform-origin: left;
+}
+.bsp-volume-panel .bsp-volume-slider {
+  position: relative;
+  left: 10px;
+  height: 100%;
+  min-height: 36px;
+}
+.bsp-volume-panel .bsp-volume-slider-track {
+  height: 2px;
+  width: 70px;
+  position: absolute;
+  top: 50%;
+  right: 0;
+  margin-top: -1px;
+  background: gray;
+}
+.bsp-volume-panel .bsp-volume-slider-progress {
+  height: 100%;
+  width: 0%;
+  background: red;
+  position: relative;
+}
+.bsp-volume-panel .bsp-volume-slider-handle {
+  height: 12px;
+  width: 12px;
+  border-radius: 6px;
+  position: absolute;
+  top: -4px;
+  right: 0;
+  background: white;
 }

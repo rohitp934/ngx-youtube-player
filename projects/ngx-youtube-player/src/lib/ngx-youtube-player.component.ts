@@ -4,6 +4,7 @@ import {
   HostListener,
   Input,
   OnInit,
+  Renderer2,
   ViewChild,
 } from '@angular/core';
 @Component({
@@ -13,13 +14,27 @@ import {
 })
 export class NgxYoutubePlayerComponent implements OnInit {
   @Input() src: string = '';
+  lastVolume: number | undefined;
   // Handle KeyDown Events
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
+    const tagName = document.activeElement?.tagName.toLocaleLowerCase();
+    if (tagName === 'input') return;
     switch (event.key.toLowerCase()) {
+      //@ts-ignore
       case ' ':
+        if (tagName === 'button') return;
       case 'k':
         this.togglePlay();
+        break;
+      case 'f':
+        this.toggleFullScreen();
+        break;
+      case 't':
+        this.toggleTheater();
+        break;
+      case 'i':
+        this.toggleMiniPlayer();
         break;
     }
   }
@@ -39,10 +54,48 @@ export class NgxYoutubePlayerComponent implements OnInit {
   @ViewChild('theaterBtn') theaterBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('miniPlayerBtn') miniPlayerBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('fullScreenBtn') fullScreenBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('volumeContainer') volumeContainer!: ElementRef<HTMLDivElement>;
+  @ViewChild('volumeSlider') volumeSlider!: ElementRef<HTMLDivElement>;
+  @ViewChild('volumeProgress') volumeProgress!: ElementRef<HTMLDivElement>;
 
-  constructor() {}
+  constructor(private renderer2: Renderer2) {}
+
+  private unlistenVolumeDrag!: () => void;
+  private unlistenMoveHandler!: () => void;
+  private unlistenVolumeStopHandler!: () => void;
 
   ngOnInit(): void {}
+  ngAfterViewInit(): void {
+    this.unlistenVolumeDrag = this.renderer2.listen(
+      this.volumeSlider.nativeElement,
+      'mousedown',
+      (e: MouseEvent) => {
+        e.preventDefault();
+        this.unlistenMoveHandler = this.renderer2.listen(
+          'document',
+          'mousemove',
+          (e: MouseEvent) => {
+            let percent = this.getElementPercentage(e, this.volumeSlider);
+            if (percent < 0) {
+              percent = 0;
+            } else if (percent > 100) {
+              percent = 100;
+            }
+            return this.volumeSet(percent);
+          }
+        );
+
+        this.unlistenVolumeStopHandler = this.renderer2.listen(
+          'document',
+          'mouseup',
+          (e: MouseEvent) => {
+            this.unlistenMoveHandler();
+            this.unlistenVolumeStopHandler();
+          }
+        );
+      }
+    );
+  }
 
   // View Modes
   toggleTheater() {
@@ -57,7 +110,21 @@ export class NgxYoutubePlayerComponent implements OnInit {
     }
   }
 
-  toggleMiniPlayer() {}
+  toggleMiniPlayer() {
+    if (this.videoContainer.nativeElement.classList.contains('mini-player')) {
+      document.exitPictureInPicture();
+    } else {
+      this.video.nativeElement.requestPictureInPicture();
+    }
+  }
+
+  enterPictureInPicture() {
+    this.videoContainer.nativeElement.classList.add('mini-player');
+  }
+
+  leavePictureInPicture() {
+    this.videoContainer.nativeElement.classList.remove('mini-player');
+  }
 
   // Play/Pause video
   togglePlay() {
@@ -72,5 +139,28 @@ export class NgxYoutubePlayerComponent implements OnInit {
 
   pauseVideo() {
     this.videoContainer.nativeElement.classList.add('paused');
+  }
+
+  // Volume Controls
+
+  getElementPercentage(click: MouseEvent, elm: ElementRef<HTMLDivElement>) {
+    const rect = elm.nativeElement.getBoundingClientRect();
+    return ((click.pageX - rect.left) / rect.width) * 100;
+  }
+
+  volumeClick(e: MouseEvent) {
+    const percent = this.getElementPercentage(e, this.volumeSlider);
+    this.volumeSet(percent);
+  }
+
+  volumeSet(percent: number) {
+    this.volumeProgress.nativeElement.style.width = percent + '%';
+    this.lastVolume = this.video.nativeElement.volume = percent / 100;
+  }
+
+  volumeMute() {
+    const vol = this.video.nativeElement.volume > 0 ? 0 : this.lastVolume || 1;
+    this.video.nativeElement.volume = vol;
+    this.volumeProgress.nativeElement.style.width = vol * 100 + '%';
   }
 }
