@@ -3,6 +3,7 @@ import {
   ElementRef,
   HostListener,
   Input,
+  NgZone,
   OnInit,
   Renderer2,
   ViewChild,
@@ -14,7 +15,9 @@ import {
 })
 export class NgxYoutubePlayerComponent implements OnInit {
   @Input() src: string = '';
-  lastVolume: number | undefined;
+  lastVolume!: number;
+  volumeHoverTimeout: any;
+  volumeSliderDown: boolean = false;
   // Handle KeyDown Events
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
@@ -35,6 +38,9 @@ export class NgxYoutubePlayerComponent implements OnInit {
         break;
       case 'i':
         this.toggleMiniPlayer();
+        break;
+      case 'm':
+        this.volumeMute();
         break;
     }
   }
@@ -58,7 +64,7 @@ export class NgxYoutubePlayerComponent implements OnInit {
   @ViewChild('volumeSlider') volumeSlider!: ElementRef<HTMLDivElement>;
   @ViewChild('volumeProgress') volumeProgress!: ElementRef<HTMLDivElement>;
 
-  constructor(private renderer2: Renderer2) {}
+  constructor(private renderer2: Renderer2, private ngZone: NgZone) {}
 
   private unlistenVolumeDrag!: () => void;
   private unlistenMoveHandler!: () => void;
@@ -66,29 +72,36 @@ export class NgxYoutubePlayerComponent implements OnInit {
 
   ngOnInit(): void {}
   ngAfterViewInit(): void {
+    this.volumeSet(50);
     this.unlistenVolumeDrag = this.renderer2.listen(
       this.volumeSlider.nativeElement,
       'mousedown',
       (e: MouseEvent) => {
+        this.volumeSliderDown = true;
+        this.videoContainer.nativeElement.classList.add('mouseheld');
         e.preventDefault();
-        this.unlistenMoveHandler = this.renderer2.listen(
-          'document',
-          'mousemove',
-          (e: MouseEvent) => {
-            let percent = this.getElementPercentage(e, this.volumeSlider);
-            if (percent < 0) {
-              percent = 0;
-            } else if (percent > 100) {
-              percent = 100;
+        this.ngZone.runOutsideAngular(() => {
+          this.unlistenMoveHandler = this.renderer2.listen(
+            'document',
+            'mousemove',
+            (e: MouseEvent) => {
+              let percent = this.getElementPercentage(e, this.volumeSlider);
+              if (percent < 0) {
+                percent = 0;
+              } else if (percent > 100) {
+                percent = 100;
+              }
+              return this.volumeSet(percent);
             }
-            return this.volumeSet(percent);
-          }
-        );
+          );
+        });
 
         this.unlistenVolumeStopHandler = this.renderer2.listen(
           'document',
           'mouseup',
           (e: MouseEvent) => {
+            this.volumeSliderDown = false;
+            this.videoContainer.nativeElement.classList.remove('mouseheld');
             this.unlistenMoveHandler();
             this.unlistenVolumeStopHandler();
           }
@@ -148,6 +161,21 @@ export class NgxYoutubePlayerComponent implements OnInit {
     return ((click.pageX - rect.left) / rect.width) * 100;
   }
 
+  volumeHoverIn() {
+    if (this.volumeHoverTimeout) {
+      clearTimeout(this.volumeHoverTimeout);
+    }
+    this.volumeContainer.nativeElement.classList.add('bsp-volume-show');
+  }
+
+  volumeHoverOut() {
+    if (this.volumeSliderDown === false) {
+      this.volumeHoverTimeout = setTimeout(() => {
+        this.volumeContainer.nativeElement.classList.remove('bsp-volume-show');
+      }, 400);
+    }
+  }
+
   volumeClick(e: MouseEvent) {
     const percent = this.getElementPercentage(e, this.volumeSlider);
     this.volumeSet(percent);
@@ -156,11 +184,49 @@ export class NgxYoutubePlayerComponent implements OnInit {
   volumeSet(percent: number) {
     this.volumeProgress.nativeElement.style.width = percent + '%';
     this.lastVolume = this.video.nativeElement.volume = percent / 100;
+    this.video.nativeElement.muted = this.lastVolume === 0;
+
+    let volumeLevel;
+    if (
+      this.video.nativeElement.muted ||
+      this.video.nativeElement.volume === 0
+    ) {
+      volumeLevel = 'muted';
+    } else if (this.lastVolume >= 0.5) {
+      volumeLevel = 'high';
+    } else {
+      volumeLevel = 'low';
+    }
+    this.videoContainer.nativeElement.dataset['volumeLevel'] = volumeLevel;
   }
 
   volumeMute() {
     const vol = this.video.nativeElement.volume > 0 ? 0 : this.lastVolume || 1;
     this.video.nativeElement.volume = vol;
+    this.video.nativeElement.muted = vol === 0;
+    if (vol === 0)
+      this.videoContainer.nativeElement.dataset['volumeLevel'] = 'muted';
+    else if (vol >= 0.5)
+      this.videoContainer.nativeElement.dataset['volumeLevel'] = 'high';
+    else this.videoContainer.nativeElement.dataset['volumeLevel'] = 'low';
+
     this.volumeProgress.nativeElement.style.width = vol * 100 + '%';
+  }
+
+  volumeKeydown(event: KeyboardEvent) {
+    let volumePercent = this.lastVolume * 100;
+    if (event.key === 'ArrowRight') {
+      if (volumePercent + 5 <= 100) {
+        this.volumeSet(volumePercent + 5);
+      } else {
+        this.volumeSet(100);
+      }
+    } else if (event.key === 'ArrowLeft') {
+      if (volumePercent - 5 >= 0) {
+        this.volumeSet(volumePercent - 5);
+      } else {
+        this.volumeSet(0);
+      }
+    }
   }
 }

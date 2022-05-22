@@ -10,7 +10,15 @@
           <path fill="currentColor" d="M14,19H18V5H14M6,19H10V5H6V19Z" />
         </svg>
       </button>
-      <div #volumeContainer class="volume-container">
+      <div
+        #volumeContainer
+        class="volume-container"
+        tabindex="-1"
+        (mouseenter)="volumeHoverIn()"
+        (mouseleave)="volumeHoverOut()"
+        (blur)="volumeHoverOut()"
+        (focusout)="volumeHoverOut()"
+      >
         <button class="mute-btn" (click)="volumeMute()">
           <svg class="volume-high-icon" viewBox="-6 -6 36 36">
             <path
@@ -36,6 +44,8 @@
             #volumeSlider
             class="bsp-volume-slider"
             (click)="volumeClick($event)"
+            (keydown)="volumeKeydown($event)"
+            tabindex="0"
           >
             <div class="bsp-volume-slider-track">
               <div #volumeProgress class="bsp-volume-slider-progress">

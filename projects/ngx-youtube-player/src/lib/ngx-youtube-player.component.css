@@ -51,7 +51,8 @@ video {
 
 .video-container:hover .video-controls-container,
 .video-container:focus-within .video-controls-container,
-.video-container.paused .video-controls-container {
+.video-container.paused .video-controls-container,
+.video-container.mouseheld .video-controls-container {
   opacity: 1;
 }
 
@@ -108,6 +109,7 @@ video {
 .volume-low-icon,
 .volume-muted-icon {
   display: none;
+  transition: all 150ms ease-in-out;
 }
 
 .video-container[data-volume-level="high"] .volume-high-icon {
@@ -123,8 +125,9 @@ video {
 .volume-container {
   display: flex;
 }
-.volume-container:hover .bsp-volume-panel {
-  width: 73px;
+.volume-container.bsp-volume-show .bsp-volume-panel,
+.bsp-volume-panel:focus-within {
+  width: 70px;
 }
 .bsp-volume-panel {
   bottom: 0;
