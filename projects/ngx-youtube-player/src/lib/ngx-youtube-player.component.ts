@@ -63,6 +63,8 @@ export class NgxYoutubePlayerComponent implements OnInit {
   @ViewChild('volumeContainer') volumeContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('volumeSlider') volumeSlider!: ElementRef<HTMLDivElement>;
   @ViewChild('volumeProgress') volumeProgress!: ElementRef<HTMLDivElement>;
+  @ViewChild('currentTime') currentTime!: ElementRef<HTMLDivElement>;
+  @ViewChild('totalTime') totalTime!: ElementRef<HTMLDivElement>;
 
   constructor(private renderer2: Renderer2, private ngZone: NgZone) {}
 
@@ -228,5 +230,25 @@ export class NgxYoutubePlayerComponent implements OnInit {
         this.volumeSet(0);
       }
     }
+  }
+
+  // Time Controls
+  leadingZeroFormatter = new Intl.NumberFormat(undefined, {
+    minimumIntegerDigits: 2,
+  });
+
+  formatDuration(time: number) {
+    const seconds = Math.floor(time % 60);
+    const minutes = Math.floor(time / 60) % 60;
+    const hours = Math.floor(time / 3600);
+    if (hours === 0) {
+      return `${minutes}:${this.leadingZeroFormatter.format(seconds)}`;
+    }
+    return '';
+  }
+  onVideoLoaded() {
+    this.totalTime.nativeElement.textContent = this.formatDuration(
+      this.video.nativeElement.duration
+    );
   }
 }
