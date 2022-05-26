@@ -15,14 +15,17 @@ import {
 })
 export class NgxYoutubePlayerComponent implements OnInit {
   @Input() src: string = '';
+  @Input() captionSrc: string = '';
   lastVolume!: number;
   volumeHoverTimeout: any;
   volumeSliderDown: boolean = false;
+  captions!: TextTrack;
   // Handle KeyDown Events
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
     const tagName = document.activeElement?.tagName.toLocaleLowerCase();
     if (tagName === 'input') return;
+    if (document.activeElement?.className === 'bsp-volume-slider') return;
     switch (event.key.toLowerCase()) {
       //@ts-ignore
       case ' ':
@@ -42,6 +45,30 @@ export class NgxYoutubePlayerComponent implements OnInit {
       case 'm':
         this.volumeMute();
         break;
+      case 'c':
+        this.toggleCaptions();
+        break;
+      case 'arrowup':
+        if (this.lastVolume * 100 + 5 <= 100) {
+          this.volumeSet(this.lastVolume * 100 + 5);
+        } else {
+          this.volumeSet(100);
+        }
+        break;
+      case 'arrowdown':
+        if (this.lastVolume * 100 - 5 >= 0) {
+          this.volumeSet(this.lastVolume * 100 - 5);
+        } else {
+          this.volumeSet(0);
+        }
+        break;
+      case 'arrowleft':
+      case 'j':
+        this.skip(-5);
+        break;
+      case 'arrowright':
+      case 'l':
+        this.skip(5);
     }
   }
 
@@ -60,6 +87,7 @@ export class NgxYoutubePlayerComponent implements OnInit {
   @ViewChild('theaterBtn') theaterBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('miniPlayerBtn') miniPlayerBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('fullScreenBtn') fullScreenBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('captionsBtn') captionsBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('volumeContainer') volumeContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('volumeSlider') volumeSlider!: ElementRef<HTMLDivElement>;
   @ViewChild('volumeProgress') volumeProgress!: ElementRef<HTMLDivElement>;
@@ -74,7 +102,11 @@ export class NgxYoutubePlayerComponent implements OnInit {
 
   ngOnInit(): void {}
   ngAfterViewInit(): void {
+    console.log('Video src: ', this.src);
+    console.log('Captions src: ', this.captionSrc);
     this.volumeSet(50);
+    this.captions = this.video.nativeElement.textTracks[0];
+    this.captions.mode = 'hidden';
     this.unlistenVolumeDrag = this.renderer2.listen(
       this.volumeSlider.nativeElement,
       'mousedown',
@@ -178,11 +210,16 @@ export class NgxYoutubePlayerComponent implements OnInit {
     }
   }
 
-  volumeClick(e: MouseEvent) {
-    const percent = this.getElementPercentage(e, this.volumeSlider);
+  volumeClick(event: MouseEvent) {
+    const percent = this.getElementPercentage(event, this.volumeSlider);
     this.volumeSet(percent);
   }
 
+  /*
+   * Set Volume of video and set lastVolume variable.
+   * @param {number} percent - Percentage of volume to set.
+   * @returns {void}
+   */
   volumeSet(percent: number) {
     this.volumeProgress.nativeElement.style.width = percent + '%';
     this.lastVolume = this.video.nativeElement.volume = percent / 100;
@@ -202,7 +239,11 @@ export class NgxYoutubePlayerComponent implements OnInit {
     this.videoContainer.nativeElement.dataset['volumeLevel'] = volumeLevel;
   }
 
-  volumeMute() {
+  /*
+   * Volume Mute Toggle
+   * @returns {void}
+   */
+  volumeMute(): void {
     const vol = this.video.nativeElement.volume > 0 ? 0 : this.lastVolume || 1;
     this.video.nativeElement.volume = vol;
     this.video.nativeElement.muted = vol === 0;
@@ -215,15 +256,20 @@ export class NgxYoutubePlayerComponent implements OnInit {
     this.volumeProgress.nativeElement.style.width = vol * 100 + '%';
   }
 
-  volumeKeydown(event: KeyboardEvent) {
+  /*
+   * Volume Slider KeyboardEvent Handler
+   * @param {KeyboardEvent} event - KeyboardEvent
+   * @returns {void}
+   */
+  volumeKeydown(event: KeyboardEvent): void {
     let volumePercent = this.lastVolume * 100;
-    if (event.key === 'ArrowRight') {
+    if (event.key.toLowerCase() === 'arrowright') {
       if (volumePercent + 5 <= 100) {
         this.volumeSet(volumePercent + 5);
       } else {
         this.volumeSet(100);
       }
-    } else if (event.key === 'ArrowLeft') {
+    } else if (event.key.toLowerCase() === 'arrowleft') {
       if (volumePercent - 5 >= 0) {
         this.volumeSet(volumePercent - 5);
       } else {
@@ -232,23 +278,68 @@ export class NgxYoutubePlayerComponent implements OnInit {
     }
   }
 
+  // Caption Controls
+
+  /*
+   * Caption Toggle
+   * @returns {void}
+   */
+  toggleCaptions() {
+    const isCaptions = this.captions!.mode === 'hidden';
+    this.captions.mode = isCaptions ? 'showing' : 'hidden';
+    this.videoContainer.nativeElement.classList.toggle('captions', isCaptions);
+  }
+
   // Time Controls
   leadingZeroFormatter = new Intl.NumberFormat(undefined, {
     minimumIntegerDigits: 2,
   });
 
-  formatDuration(time: number) {
+  /*
+   * This function is used to update the current time of the video.
+   * It is called everytime the video time is updated.
+   * @returns {void}
+   */
+  onTimeUpdate(): void {
+    this.currentTime.nativeElement.textContent = this.formatDuration(
+      this.video.nativeElement.currentTime
+    );
+  }
+
+  /*
+   * This function is used to format the duration of the video as hh:mm:ss or mm:ss.
+   * @param {number} time - The time in seconds.
+   * @returns {string} - The formatted time.
+   */
+  formatDuration(time: number): string {
     const seconds = Math.floor(time % 60);
     const minutes = Math.floor(time / 60) % 60;
     const hours = Math.floor(time / 3600);
     if (hours === 0) {
       return `${minutes}:${this.leadingZeroFormatter.format(seconds)}`;
     }
-    return '';
+    return `${hours}:${this.leadingZeroFormatter.format(
+      minutes
+    )}:${this.leadingZeroFormatter.format(seconds)}`;
   }
-  onVideoLoaded() {
+
+  /*
+   * This function sets the total time once the video is loaded.
+   * @returns {void}
+   */
+  onVideoLoaded(): void {
     this.totalTime.nativeElement.textContent = this.formatDuration(
       this.video.nativeElement.duration
     );
+  }
+
+  /*
+   * This function skips the video by the specified time.
+   * @param {number} time - The time in seconds.
+   * @returns {void}
+   */
+  skip(time: number): void {
+    const newTime = this.video.nativeElement.currentTime + time;
+    this.video.nativeElement.currentTime = newTime;
   }
 }

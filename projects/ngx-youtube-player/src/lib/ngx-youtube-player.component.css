@@ -191,3 +191,30 @@ video {
   font-family: "Noto Sans", sans-serif;
   font-size: 0.75rem;
 }
+
+.video-container:not(.captions) .captions-btn::after {
+  content: "";
+  display: block;
+  position: relative;
+  width: 0px;
+  left: 24px;
+  height: 3px;
+  bottom: 12px;
+  background-color: red;
+  transition: left 0.25s cubic-bezier(0, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.video-container.captions .captions-btn::after {
+  content: "";
+  display: block;
+  position: relative;
+  width: 24px;
+  left: 12px;
+  height: 3px;
+  bottom: 12px;
+  background-color: red;
+  transition: left 0.25s cubic-bezier(0, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0, 0, 0.2, 1);
+  /* transition: all 150ms ease-in-out; */
+}
