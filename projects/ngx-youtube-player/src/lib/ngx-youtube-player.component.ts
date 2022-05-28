@@ -93,6 +93,8 @@ export class NgxYoutubePlayerComponent implements OnInit {
   @ViewChild('volumeProgress') volumeProgress!: ElementRef<HTMLDivElement>;
   @ViewChild('currentTime') currentTime!: ElementRef<HTMLDivElement>;
   @ViewChild('totalTime') totalTime!: ElementRef<HTMLDivElement>;
+  @ViewChild('speedBtn') speedBtn!: ElementRef<HTMLButtonElement>;
+  @ViewChild('dropupPanel') dropupPanel!: ElementRef<HTMLDivElement>;
 
   constructor(private renderer2: Renderer2, private ngZone: NgZone) {}
 
@@ -341,5 +343,44 @@ export class NgxYoutubePlayerComponent implements OnInit {
   skip(time: number): void {
     const newTime = this.video.nativeElement.currentTime + time;
     this.video.nativeElement.currentTime = newTime;
+  }
+
+  /*
+   * This function changes playback speed.
+   * @param {number} speed - The speed to set.
+   * @returns {void}
+   */
+  changeSpeed(speed: number): void {
+    this.video.nativeElement.playbackRate = speed;
+    this.speedBtn.nativeElement.textContent = `${speed}x`;
+    this.dropupPanel.nativeElement.classList.toggle('drop-up');
+  }
+
+  /*
+   * This function is used to toggle the playback speed menu.
+   * @returns {void}
+   */
+  toggleSpeed(): void {
+    if (this.dropupPanel.nativeElement.classList.contains('hidden')) {
+      this.dropupPanel.nativeElement.classList.remove('hidden');
+      setTimeout(
+        () =>
+          this.dropupPanel.nativeElement.classList.remove('visually-hidden'),
+        0
+      );
+    } else {
+      this.dropupPanel.nativeElement.classList.add('visually-hidden');
+      this.dropupPanel.nativeElement.addEventListener(
+        'transitionend',
+        () => {
+          this.dropupPanel.nativeElement.classList.add('hidden');
+        },
+        {
+          capture: false,
+          once: true,
+          passive: false,
+        }
+      );
+    }
   }
 }

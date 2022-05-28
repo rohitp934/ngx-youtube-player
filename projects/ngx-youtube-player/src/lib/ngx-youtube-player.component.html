@@ -68,6 +68,38 @@
           />
         </svg>
       </button>
+      <button #speedBtn class="speed-btn wide-btn" (click)="toggleSpeed()">
+        1x
+      </button>
+      <div #dropupPanel class="dropup-panel hidden visually-hidden">
+        <div class="panel-header">Playback Speed</div>
+        <div class="panel-menu">
+          <div class="menu-item" (click)="changeSpeed(0.25)">
+            <div class="menu-item-label">0.25x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(0.5)">
+            <div class="menu-item-label">0.5x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(0.75)">
+            <div class="menu-item-label">0.75x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(1)">
+            <div class="menu-item-label">1x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(1.25)">
+            <div class="menu-item-label">1.25x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(1.5)">
+            <div class="menu-item-label">1.5x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(1.75)">
+            <div class="menu-item-label">1.75x</div>
+          </div>
+          <div class="menu-item" (click)="changeSpeed(2)">
+            <div class="menu-item-label">2x</div>
+          </div>
+        </div>
+      </div>
       <button
         #miniPlayerBtn
         class="mini-player-btn"
