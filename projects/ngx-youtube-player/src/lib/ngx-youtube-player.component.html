@@ -1,6 +1,12 @@
 <div #videoContainer class="video-container paused" data-volume-level="muted">
+  <img class="thumbnail-img" />
   <div class="video-controls-container">
-    <div class="timeline-container"></div>
+    <div class="timeline-container">
+      <div class="timeline">
+        <img class="preview-img" />
+        <div class="thumb-indicator"></div>
+      </div>
+    </div>
     <div class="controls">
       <button #playPauseBtn class="play-pause-btn" (click)="togglePlay()">
         <svg class="play-icon" viewBox="-6 -6 36 36">
