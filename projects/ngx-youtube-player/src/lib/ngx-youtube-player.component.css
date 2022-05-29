@@ -323,7 +323,6 @@ video {
   bottom: 0;
   right: calc(100% - var(--progress-position) * 100%);
   background-color: red;
-  display: none;
 }
 
 .timeline {
@@ -368,12 +367,12 @@ video {
   display: none;
 }
 
-.video-container.scrubbing .thumbnail-img {
+.video-container.previews.scrubbing .thumbnail-img {
   display: block;
 }
 
-.video-container.scrubbing .preview-img,
-.timeline-container:hover .preview-img {
+.video-container.previews.scrubbing .preview-img,
+.video-container.previews .timeline-container:hover .preview-img {
   display: block;
 }
 

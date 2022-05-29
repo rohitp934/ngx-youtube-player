@@ -1,9 +1,13 @@
 <div #videoContainer class="video-container paused" data-volume-level="muted">
-  <img class="thumbnail-img" />
+  <img #thumbnailImg class="thumbnail-img" />
   <div class="video-controls-container">
-    <div class="timeline-container">
+    <div
+      #timelineContainer
+      class="timeline-container"
+      (mousemove)="handleTimelineUpdate($event)"
+    >
       <div class="timeline">
-        <img class="preview-img" />
+        <img #previewImg class="preview-img" />
         <div class="thumb-indicator"></div>
       </div>
     </div>

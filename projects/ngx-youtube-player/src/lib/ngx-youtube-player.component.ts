@@ -16,10 +16,14 @@ import {
 export class NgxYoutubePlayerComponent implements OnInit {
   @Input() src: string = '';
   @Input() captionSrc: string = '';
+  @Input() previewImgSrc: string = '';
   lastVolume!: number;
   volumeHoverTimeout: any;
   volumeSliderDown: boolean = false;
   captions!: TextTrack;
+  videoDuration: number | undefined;
+  isScrubbing: boolean = false;
+  wasPaused: boolean = false;
   // Handle KeyDown Events
   @HostListener('document:keydown', ['$event'])
   handleKeyboardEvent(event: KeyboardEvent) {
@@ -95,20 +99,101 @@ export class NgxYoutubePlayerComponent implements OnInit {
   @ViewChild('totalTime') totalTime!: ElementRef<HTMLDivElement>;
   @ViewChild('speedBtn') speedBtn!: ElementRef<HTMLButtonElement>;
   @ViewChild('dropupPanel') dropupPanel!: ElementRef<HTMLDivElement>;
+  @ViewChild('previewImg') previewImg!: ElementRef<HTMLImageElement>;
+  @ViewChild('thumbnailImg') thumbnailImg!: ElementRef<HTMLImageElement>;
+  @ViewChild('timelineContainer')
+  timelineContainer!: ElementRef<HTMLDivElement>;
 
   constructor(private renderer2: Renderer2, private ngZone: NgZone) {}
 
   private unlistenVolumeDrag!: () => void;
   private unlistenMoveHandler!: () => void;
   private unlistenVolumeStopHandler!: () => void;
+  private unlistenScrubbing!: () => void;
+  private unlistenTimelineMoveHandler!: () => void;
+  private unlistenScrubbingStopHandler!: () => void;
 
   ngOnInit(): void {}
   ngAfterViewInit(): void {
-    console.log('Video src: ', this.src);
-    console.log('Captions src: ', this.captionSrc);
+    if (this.previewImgSrc !== '') {
+      this.videoContainer.nativeElement.classList.add('previews');
+    }
     this.volumeSet(50);
     this.captions = this.video.nativeElement.textTracks[0];
     this.captions.mode = 'hidden';
+    this.unlistenScrubbing = this.renderer2.listen(
+      this.timelineContainer.nativeElement,
+      'mousedown',
+      (event: MouseEvent) => {
+        event.preventDefault();
+        const rect =
+          this.timelineContainer.nativeElement.getBoundingClientRect();
+        let percent =
+          Math.min(Math.max(0, event.x - rect.x), rect.width) / rect.width;
+        this.isScrubbing = (event.buttons & 1) === 1;
+        this.videoContainer.nativeElement.classList.toggle(
+          'scrubbing',
+          this.isScrubbing
+        );
+        this.wasPaused = this.video.nativeElement.paused;
+        if (this.isScrubbing) {
+          this.video.nativeElement.pause();
+        }
+        this.ngZone.runOutsideAngular(() => {
+          this.unlistenTimelineMoveHandler = this.renderer2.listen(
+            'document',
+            'mousemove',
+            (event: MouseEvent) => {
+              const rect =
+                this.timelineContainer.nativeElement.getBoundingClientRect();
+              percent =
+                Math.min(Math.max(0, event.x - rect.x), rect.width) /
+                rect.width;
+
+              if (this.previewImgSrc !== '') {
+                const previewImgNumber = Math.max(
+                  1,
+                  Math.floor((percent * this.videoDuration!) / 10)
+                );
+
+                let previewImgSrc = `${this.previewImgSrc}/preview${previewImgNumber}.jpg`;
+                this.thumbnailImg.nativeElement.src = previewImgSrc;
+                this.previewImg.nativeElement.src = previewImgSrc;
+              }
+              this.timelineContainer.nativeElement.style.setProperty(
+                '--preview-position',
+                percent.toString()
+              );
+
+              if (this.isScrubbing) {
+                event.preventDefault();
+                this.timelineContainer.nativeElement.style.setProperty(
+                  '--progress-position',
+                  percent.toString()
+                );
+              }
+            }
+          );
+        });
+
+        this.unlistenScrubbingStopHandler = this.renderer2.listen(
+          'document',
+          'mouseup',
+          (event: MouseEvent) => {
+            this.isScrubbing = false;
+            this.video.nativeElement.currentTime =
+              percent * this.videoDuration!;
+            if (!this.wasPaused) this.video.nativeElement.play();
+            this.videoContainer.nativeElement.classList.toggle(
+              'scrubbing',
+              this.isScrubbing
+            );
+            this.unlistenTimelineMoveHandler();
+            this.unlistenScrubbingStopHandler();
+          }
+        );
+      }
+    );
     this.unlistenVolumeDrag = this.renderer2.listen(
       this.volumeSlider.nativeElement,
       'mousedown',
@@ -306,6 +391,11 @@ export class NgxYoutubePlayerComponent implements OnInit {
     this.currentTime.nativeElement.textContent = this.formatDuration(
       this.video.nativeElement.currentTime
     );
+    const percent = this.video.nativeElement.currentTime / this.videoDuration!;
+    this.timelineContainer.nativeElement.style.setProperty(
+      '--progress-position',
+      percent.toString()
+    );
   }
 
   /*
@@ -330,6 +420,7 @@ export class NgxYoutubePlayerComponent implements OnInit {
    * @returns {void}
    */
   onVideoLoaded(): void {
+    this.videoDuration = this.video.nativeElement.duration;
     this.totalTime.nativeElement.textContent = this.formatDuration(
       this.video.nativeElement.duration
     );
@@ -380,6 +471,42 @@ export class NgxYoutubePlayerComponent implements OnInit {
           once: true,
           passive: false,
         }
+      );
+    }
+  }
+
+  // Timeline Controls
+
+  /*
+   * This function is used to update the timeline.
+   * @param {MouseEvent} event - The mouse event.
+   * @returns {void}
+   */
+  handleTimelineUpdate(event: MouseEvent): void {
+    const rect = this.timelineContainer.nativeElement.getBoundingClientRect();
+    const percent =
+      Math.min(Math.max(0, event.x - rect.x), rect.width) / rect.width;
+
+    if (this.previewImgSrc !== '') {
+      const previewImgNumber = Math.max(
+        1,
+        Math.floor((percent * this.videoDuration!) / 10)
+      );
+
+      let previewImgSrc = `${this.previewImgSrc}/preview${previewImgNumber}.jpg`;
+      this.thumbnailImg.nativeElement.src = previewImgSrc;
+      this.previewImg.nativeElement.src = previewImgSrc;
+    }
+    this.timelineContainer.nativeElement.style.setProperty(
+      '--preview-position',
+      percent.toString()
+    );
+
+    if (this.isScrubbing) {
+      event.preventDefault();
+      this.timelineContainer.nativeElement.style.setProperty(
+        '--progress-position',
+        percent.toString()
       );
     }
   }
