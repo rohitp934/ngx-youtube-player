@@ -1,6 +1,16 @@
 <div #videoContainer class="video-container paused" data-volume-level="muted">
+  <img #thumbnailImg class="thumbnail-img" />
   <div class="video-controls-container">
-    <div class="timeline-container"></div>
+    <div
+      #timelineContainer
+      class="timeline-container"
+      (mousemove)="handleTimelineUpdate($event)"
+    >
+      <div class="timeline">
+        <img #previewImg class="preview-img" />
+        <div class="thumb-indicator"></div>
+      </div>
+    </div>
     <div class="controls">
       <button #playPauseBtn class="play-pause-btn" (click)="togglePlay()">
         <svg class="play-icon" viewBox="-6 -6 36 36">
